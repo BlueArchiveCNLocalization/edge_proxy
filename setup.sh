@@ -38,6 +38,11 @@ luarocks install lua-resty-rsa
 echo "[*] Creating cache directory..."
 mkdir -p /usr/local/openresty/nginx/proxy-cache
 
+# Ensure the 'www-data' user (or the Nginx user) has write permissions to the cache directory
+echo "[*] Setting appropriate permissions for the cache directory..."
+chown -R www-data:www-data /usr/local/openresty/nginx/proxy-cache
+chmod -R 755 /usr/local/openresty/nginx/proxy-cache
+
 echo "[*] Copying nginx config..."
 cp ./nginx/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 
