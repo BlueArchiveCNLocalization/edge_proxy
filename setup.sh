@@ -21,47 +21,92 @@ OS_CODENAME=${VERSION_CODENAME:-$(lsb_release -sc 2>/dev/null || echo "")}
 
 echo "[*] Detected OS: $OS_ID ($OS_CODENAME)"
 
-# Install OpenResty based on the distribution
+# Function to check if the public IP is located in China using ipinfo.io
+check_ip_in_china() {
+  local ip=$1
+  local country
+  country=$(curl -s "https://ipinfo.io/${ip}/country" | tr -d '[:space:]')
+  [[ "$country" == "CN" ]]
+}
+
 install_openresty() {
   case "$OS_ID" in
     ubuntu|debian)
       echo "[*] Installing dependencies..."
       apt update
-      apt install -y curl gnupg2 ca-certificates lsb-release unzip git software-properties-common
+      apt install -y curl wget gnupg2 ca-certificates lsb-release unzip git software-properties-common
 
-      echo "[*] Adding OpenResty repo for $OS_ID ($OS_CODENAME)..."
-      [ -e /usr/share/keyrings/openresty.gpg ] || wget -qO - https://openresty.org/package/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/openresty.gpg
+      # get public IP
+      PUBLIC_IP=$(curl -s ifconfig.me)
 
-      # For Debian
-      if [[ "$OS_ID" == "debian" ]]; then
-        echo "deb [signed-by=/usr/share/keyrings/openresty.gpg] http://openresty.org/package/debian bullseye openresty" \
-          > /etc/apt/sources.list.d/openresty.list
-      # For Ubuntu
-      elif [[ "$OS_ID" == "ubuntu" ]]; then
-        echo "deb [signed-by=/usr/share/keyrings/openresty.gpg] http://openresty.org/package/ubuntu $OS_CODENAME main" \
-          > /etc/apt/sources.list.d/openresty.list
+      echo "[*] Importing OpenResty GPG key..."
+      if check_ip_in_china "$PUBLIC_IP"; then
+        echo "    — China detected: using USTC mirror key"
+        wget -qO - https://mirrors.ustc.edu.cn/openresty/package/pubkey.gpg \
+          | gpg --dearmor -o /usr/share/keyrings/openresty.gpg
+      else
+        echo "    — non-China: using official key"
+        wget -qO - https://openresty.org/package/pubkey.gpg \
+          | gpg --dearmor -o /usr/share/keyrings/openresty.gpg
       fi
+
+      echo "[*] Adding OpenResty repo..."
+      if check_ip_in_china "$PUBLIC_IP"; then
+        # USTC mirror
+        if [[ "$OS_ID" == "debian" ]]; then
+          repo="https://mirrors.ustc.edu.cn/openresty/debian bullseye openresty"
+        else
+          repo="https://mirrors.ustc.edu.cn/openresty/ubuntu $OS_CODENAME main"
+        fi
+      else
+        # official
+        if [[ "$OS_ID" == "debian" ]]; then
+          repo="http://openresty.org/package/debian bullseye openresty"
+        else
+          repo="http://openresty.org/package/ubuntu $OS_CODENAME main"
+        fi
+      fi
+      echo "deb [signed-by=/usr/share/keyrings/openresty.gpg] $repo" \
+        > /etc/apt/sources.list.d/openresty.list
 
       apt update
       apt install -y openresty luarocks
       ;;
-    
+
     centos|rhel|rocky|almalinux)
       echo "[*] Installing dependencies..."
-      yum install -y yum-utils curl unzip git
+      yum install -y yum-utils curl wget unzip git
 
-      echo "[*] Adding OpenResty repo for $OS_ID..."
-      yum-config-manager --add-repo https://openresty.org/package/centos/openresty.repo
+      PUBLIC_IP=$(curl -s ifconfig.me)
+
+      echo "[*] Adding OpenResty repo..."
+      if check_ip_in_china "$PUBLIC_IP"; then
+        echo "    — China detected: using USTC mirror"
+        repo="https://mirrors.ustc.edu.cn/openresty/centos/openresty.repo"
+      else
+        echo "    — non-China: using official"
+        repo="https://openresty.org/package/centos/openresty.repo"
+      fi
+      yum-config-manager --add-repo "$repo"
 
       yum install -y openresty luarocks
       ;;
 
     fedora)
       echo "[*] Installing dependencies..."
-      dnf install -y dnf-plugins-core curl unzip git
+      dnf install -y dnf-plugins-core curl wget unzip git
 
-      echo "[*] Adding OpenResty repo for Fedora..."
-      dnf config-manager --add-repo https://openresty.org/package/fedora/openresty.repo
+      PUBLIC_IP=$(curl -s ifconfig.me)
+
+      echo "[*] Adding OpenResty repo..."
+      if check_ip_in_china "$PUBLIC_IP"; then
+        echo "    — China detected: using USTC mirror"
+        repo="https://mirrors.ustc.edu.cn/openresty/fedora/openresty.repo"
+      else
+        echo "    — non-China: using official"
+        repo="https://openresty.org/package/fedora/openresty.repo"
+      fi
+      dnf config-manager --add-repo "$repo"
 
       dnf install -y openresty luarocks
       ;;
