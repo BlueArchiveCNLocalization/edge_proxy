@@ -4,13 +4,15 @@ set -e
 # Check if the script is run as root
 if [ "$EUID" -ne 0 ]; then
   echo "[!] Please run this script with sudo:"
-  echo "    sudo $0 <port>"
+  echo "    sudo $0 <port> [--china]"
   exit 1
 fi
 
 PORT=$1
+CHINA_FLAG=$2
+
 if [ -z "$PORT" ]; then
-  echo "Usage: sudo $0 <port>"
+  echo "Usage: sudo $0 <port> [--china]"
   exit 1
 fi
 
@@ -20,14 +22,6 @@ OS_ID=$ID
 OS_CODENAME=${VERSION_CODENAME:-$(lsb_release -sc 2>/dev/null || echo "")}
 
 echo "[*] Detected OS: $OS_ID ($OS_CODENAME)"
-
-# Function to check if the public IP is located in China using ipinfo.io
-check_ip_in_china() {
-  local ip=$1
-  local country
-  country=$(curl -s "https://ipinfo.io/${ip}/country" | tr -d '[:space:]')
-  [[ "$country" == "CN" ]]
-}
 
 install_openresty() {
   case "$OS_ID" in
@@ -40,9 +34,9 @@ install_openresty() {
       PUBLIC_IP=$(curl -s ifconfig.me)
 
       echo "[*] Importing OpenResty GPG key..."
-      if check_ip_in_china "$PUBLIC_IP"; then
-        echo "    — China detected: using USTC mirror key"
-        wget -qO - https://mirrors.ustc.edu.cn/openresty/package/pubkey.gpg \
+      if [ "$CHINA_FLAG" == "--china" ]; then
+        echo "    — China option detected: using USTC mirror key"
+        wget -qO - https://mirrors.ustc.edu.cn/openresty/pubkey.gpg \
           | gpg --dearmor -o /usr/share/keyrings/openresty.gpg
       else
         echo "    — non-China: using official key"
@@ -51,7 +45,7 @@ install_openresty() {
       fi
 
       echo "[*] Adding OpenResty repo..."
-      if check_ip_in_china "$PUBLIC_IP"; then
+      if [ "$CHINA_FLAG" == "--china" ]; then
         # USTC mirror
         if [[ "$OS_ID" == "debian" ]]; then
           repo="https://mirrors.ustc.edu.cn/openresty/debian bullseye openresty"
@@ -80,8 +74,8 @@ install_openresty() {
       PUBLIC_IP=$(curl -s ifconfig.me)
 
       echo "[*] Adding OpenResty repo..."
-      if check_ip_in_china "$PUBLIC_IP"; then
-        echo "    — China detected: using USTC mirror"
+      if [ "$CHINA_FLAG" == "--china" ]; then
+        echo "    — China option detected: using USTC mirror"
         repo="https://mirrors.ustc.edu.cn/openresty/centos/openresty.repo"
       else
         echo "    — non-China: using official"
@@ -99,8 +93,8 @@ install_openresty() {
       PUBLIC_IP=$(curl -s ifconfig.me)
 
       echo "[*] Adding OpenResty repo..."
-      if check_ip_in_china "$PUBLIC_IP"; then
-        echo "    — China detected: using USTC mirror"
+      if [ "$CHINA_FLAG" == "--china" ]; then
+        echo "    — China option detected: using USTC mirror"
         repo="https://mirrors.ustc.edu.cn/openresty/fedora/openresty.repo"
       else
         echo "    — non-China: using official"
