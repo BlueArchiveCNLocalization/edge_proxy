@@ -113,9 +113,11 @@ elif command -v firewall-cmd >/dev/null; then
 # If iptables is installed, add a rule for the port
 else
   if command -v iptables >/dev/null; then
+    while iptables -D INPUT -p tcp --dport "$PORT" -j ACCEPT 2>/dev/null; do :; done
     iptables -I INPUT -p tcp --dport "$PORT" -j ACCEPT
   fi
   if command -v ip6tables >/dev/null; then
+    while ip6tables -D INPUT -p tcp --dport "$PORT" -j ACCEPT 2>/dev/null; do :; done
     ip6tables -I INPUT -p tcp --dport "$PORT" -j ACCEPT
   fi
 fi
