@@ -30,7 +30,7 @@ install_openresty() {
       apt install -y curl gnupg2 ca-certificates lsb-release unzip git software-properties-common
 
       echo "[*] Adding OpenResty repo for $OS_ID ($OS_CODENAME)..."
-      wget -qO - https://openresty.org/package/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/openresty.gpg
+      [ -e /usr/share/keyrings/openresty.gpg ] || wget -qO - https://openresty.org/package/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/openresty.gpg
 
       # For Debian
       if [[ "$OS_ID" == "debian" ]]; then
