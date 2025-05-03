@@ -89,6 +89,7 @@ cp ./nginx/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 
 echo "[*] Injecting port $PORT into config..."
 sed -i "s/listen 80;/listen $PORT;/" /usr/local/openresty/nginx/conf/nginx.conf
+sed -i "s/listen [::]:80;/listen [::]:$PORT;/" /usr/local/openresty/nginx/conf/nginx.conf
 
 echo "[*] Copying Lua and key files..."
 mkdir -p /usr/local/openresty/nginx/lua
@@ -107,17 +108,28 @@ if command -v ufw >/dev/null; then
 # If firewalld is installed, allow the port
 elif command -v firewall-cmd >/dev/null; then
     firewall-cmd --permanent --add-port="$PORT"/tcp
+    firewall-cmd --permanent --add-rich-rule="rule family='ipv6' port port='$PORT' protocol='tcp' accept"
     firewall-cmd --reload
 # If iptables is installed, add a rule for the port
-elif command -v iptables >/dev/null; then
+else
+  if command -v iptables >/dev/null; then
     iptables -I INPUT -p tcp --dport "$PORT" -j ACCEPT
+  fi
+  if command -v ip6tables >/dev/null; then
+    ip6tables -I INPUT -p tcp --dport "$PORT" -j ACCEPT
+  fi
 fi
 
 # Get public IP
-IP=$(curl -s ifconfig.me || curl -s ipinfo.io/ip)
+IPV4=$(curl -s -4 ifconfig.me || curl -s -6 ipinfo.io/ip)
+IPV6=$(curl -s -6 ifconfig.me || curl -s -6 v6.ipinfo.io/ip)
+IPV4=${IPV4:-"IPv4 Unavailable"}
+IPV6=${IPV6:-"IPv6 Unavailable"}
 
 echo
 echo "======================================="
 echo "[+] Setup complete!"
-echo "[*] Proxy server is live at: http://$IP:$PORT"
+echo "[*] Proxy server is live at:"
+echo "[*] IPv4: http://$IPV4:$PORT"
+echo "[*] IPv6: http://[$IPV6]:$PORT"
 echo "======================================="
