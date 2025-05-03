@@ -15,6 +15,7 @@ if [ -n "$1" ]; then
 
   # Update the port in nginx.conf
   sed -i "s/listen [0-9]\+;/listen $PORT;/" /usr/local/openresty/nginx/conf/nginx.conf
+  sed -i "s/listen \[::\]:[0-9]\+;/listen [::]:$PORT;/" /usr/local/openresty/nginx/conf/nginx.conf
   echo "[*] Port updated in nginx.conf"
 else
   # Extract the current port from nginx.conf if no port is provided
