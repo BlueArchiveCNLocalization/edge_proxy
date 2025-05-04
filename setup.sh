@@ -118,6 +118,9 @@ install_openresty
 echo "[*] Installing lua-resty-rsa..."
 luarocks install lua-resty-rsa
 
+echo "[*] Installing lua-resty-http..."
+luarocks install lua-resty-http
+
 echo "[*] Creating proxy cache directory..."
 mkdir -p /usr/local/openresty/nginx/proxy-cache
 chown -R www-data:www-data /usr/local/openresty/nginx/proxy-cache 2>/dev/null || chown -R nginx:nginx /usr/local/openresty/nginx/proxy-cache
