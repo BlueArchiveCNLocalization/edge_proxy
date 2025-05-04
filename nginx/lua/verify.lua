@@ -81,7 +81,3 @@ else
         return respond(403, "Invalid signature")
     end
 end
-
--- Perform cache clearance
-os.execute("find /usr/local/openresty/nginx/proxy-cache/ -type f -delete")
-return respond(200, "Cache cleared successfully")
