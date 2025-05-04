@@ -131,7 +131,7 @@ cp ./nginx/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 
 echo "[*] Injecting port $PORT into config..."
 sed -i "s/listen 80;/listen $PORT;/" /usr/local/openresty/nginx/conf/nginx.conf
-sed -i "s/listen [::]:80;/listen [::]:$PORT;/" /usr/local/openresty/nginx/conf/nginx.conf
+sed -i "s/listen \[::\]:80;/listen [::]:$PORT;/" /usr/local/openresty/nginx/conf/nginx.conf
 
 echo "[*] Copying Lua and key files..."
 mkdir -p /usr/local/openresty/nginx/lua
